@@ -7,11 +7,12 @@ import requests
 
 PMC_OA_SERVICE = "https://www.ncbi.nlm.nih.gov/pmc/utils/oa/oa.fcgi"
 UNPAYWALL_API = "https://api.unpaywall.org/v2"
+EUROPEPMC_SEARCH_API = "https://www.ebi.ac.uk/europepmc/webservices/rest/search"
 
 
 @dataclass
 class OALocation:
-    source: str  # "pmc" or "unpaywall"
+    source: str  # "pmc", "unpaywall", "europepmc", or "linkout"
     url: str
     format: str  # "pdf" or "tgz" / "html"
 
@@ -37,6 +38,45 @@ def find_pmc_oa_link(pmcid: str) -> OALocation | None:
                 href = link.get("href", "")
                 if href:
                     return OALocation(source="pmc", url=href, format=fmt)
+    return None
+
+
+def find_europepmc_link(pmid: str) -> OALocation | None:
+    if not pmid:
+        return None
+    resp = requests.get(
+        EUROPEPMC_SEARCH_API,
+        params={
+            "query": f"ext_id:{pmid} AND src:med",
+            "format": "json",
+            "resultType": "core",
+        },
+        timeout=30,
+    )
+    resp.raise_for_status()
+    data = resp.json()
+
+    results = (data.get("resultList") or {}).get("result") or []
+    if not results:
+        return None
+    result = results[0]
+
+    if result.get("isOpenAccess") != "Y":
+        return None
+
+    full_text_urls = (result.get("fullTextUrlList") or {}).get("fullTextUrl") or []
+    for url_info in full_text_urls:
+        if url_info.get("availability") == "Open access" and url_info.get("documentStyle") == "pdf":
+            url = url_info.get("url")
+            if url:
+                return OALocation(source="europepmc", url=url, format="pdf")
+
+    for url_info in full_text_urls:
+        if url_info.get("availability") == "Open access":
+            url = url_info.get("url")
+            if url:
+                return OALocation(source="europepmc", url=url, format="html")
+
     return None
 
 

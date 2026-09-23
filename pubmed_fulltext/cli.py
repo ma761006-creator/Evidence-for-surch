@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .downloader import download_oa_location
 from .entrez_client import EntrezClient
-from .oa_locator import OALocation, find_pmc_oa_link, find_unpaywall_link
+from .oa_locator import OALocation, find_europepmc_link, find_pmc_oa_link, find_unpaywall_link
 
 
 def parse_args():
@@ -59,6 +59,12 @@ def run(args):
                 time.sleep(0.1)
             except Exception as exc:
                 article.note = f"Unpaywall 查詢失敗: {exc}"
+
+        if location is None:
+            try:
+                location = find_europepmc_link(article.pmid)
+            except Exception as exc:
+                article.note = f"Europe PMC 查詢失敗: {exc}"
 
         if location is None:
             try:

@@ -8,7 +8,8 @@
 2. **找免費全文**：
    - 若文章有 **PMCID**（已收錄於 PubMed Central），查詢 [PMC Open Access 服務](https://www.ncbi.nlm.nih.gov/pmc/tools/oai/) 取得 PDF 或全文壓縮包下載連結。
    - 若文章不在 PMC 開放取用子集內，但有 **DOI**，改用 [Unpaywall API](https://unpaywall.org/products/api) 查詢是否有其他來源（如機構典藏、作者自存檔、出版商網站）提供的合法開放取用全文。
-   - 若以上兩者都找不到，最後查詢 PubMed 自己的 **LinkOut** 服務（`elink.fcgi`），比對出版商是否直接向 NCBI 登記該篇為「free resource」（也就是 PubMed 頁面上會顯示的「Free article」小圖示），藉此多抓一些 Unpaywall 未收錄、但出版商自己標記免費的文章。
+   - 若以上兩者都找不到，再查詢 **Europe PMC**（歐洲版 PMC，常會比 NCBI 自己更快收錄部分開放取用全文），確認該篇是否標示為開放取用並取得全文連結。
+   - 最後查詢 PubMed 自己的 **LinkOut** 服務（`elink.fcgi`），比對出版商是否直接向 NCBI 登記該篇為「free resource」（也就是 PubMed 頁面上會顯示的「Free article」小圖示），藉此多抓一些前面來源都未收錄、但出版商自己標記免費的文章。
 3. **下載**：將找到的全文下載至指定資料夾，副檔名依來源為 PDF 或 HTML，檔名為 `PMID_文章標題.pdf`。
 4. **輸出索引**：所有文章無論是否成功下載，都會列在 `downloads/index.csv`，包含下載狀態（`downloaded` / `not_found` / `download_failed`）。
 
