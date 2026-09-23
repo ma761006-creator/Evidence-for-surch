@@ -5,7 +5,7 @@ from pathlib import Path
 
 from .downloader import download_oa_location
 from .entrez_client import EntrezClient
-from .oa_locator import find_pmc_oa_link, find_unpaywall_link
+from .oa_locator import OALocation, find_pmc_oa_link, find_unpaywall_link
 
 
 def parse_args():
@@ -59,6 +59,15 @@ def run(args):
                 time.sleep(0.1)
             except Exception as exc:
                 article.note = f"Unpaywall 查詢失敗: {exc}"
+
+        if location is None:
+            try:
+                url = client.find_linkout_url(article.pmid)
+                if url:
+                    fmt = "pdf" if url.lower().endswith(".pdf") else "html"
+                    location = OALocation(source="linkout", url=url, format=fmt)
+            except Exception as exc:
+                article.note = f"PubMed LinkOut 查詢失敗: {exc}"
 
         if location is None:
             article.status = "not_found"

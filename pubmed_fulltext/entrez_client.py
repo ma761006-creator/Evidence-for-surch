@@ -57,6 +57,23 @@ class EntrezClient:
         resp.raise_for_status()
         return self._parse_articles(resp.text)
 
+    def find_linkout_url(self, pmid: str) -> str:
+        self._throttle()
+        resp = requests.get(
+            f"{EUTILS_BASE}/elink.fcgi",
+            params=self._params(dbfrom="pubmed", id=pmid, cmd="llinks", retmode="xml"),
+            timeout=30,
+        )
+        resp.raise_for_status()
+        root = ET.fromstring(resp.text)
+        for obj_url in root.findall(".//ObjUrl"):
+            attributes = [(a.text or "").lower() for a in obj_url.findall("Attribute")]
+            if any("free" in attr for attr in attributes):
+                url = (obj_url.findtext("Url") or "").strip()
+                if url:
+                    return url
+        return ""
+
     @staticmethod
     def _parse_articles(xml_text: str) -> list[Article]:
         root = ET.fromstring(xml_text)
