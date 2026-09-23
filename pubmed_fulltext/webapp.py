@@ -6,7 +6,7 @@ from pathlib import Path
 
 from flask import Flask, abort, render_template_string, request, send_from_directory
 
-from .pipeline import build_pico_query, run_pipeline
+from .pipeline import build_pico_query, build_title_query, run_pipeline
 
 app = Flask(__name__)
 BASE_DOWNLOADS_DIR = Path("downloads")
@@ -50,7 +50,15 @@ FORM_TEMPLATE = """
   </fieldset>
 
   <fieldset>
-    <legend>或直接輸入完整 PubMed 查詢式（填了就優先使用，忽略上面的 PICO 欄位）</legend>
+    <legend>依文章標題搜尋（填了會優先使用，忽略 PICO 與自訂查詢式）</legend>
+    <label>文章標題（會用 PubMed 的 [Title] 欄位精確比對）
+      <input type="text" name="title" value="{{ title }}" placeholder="貼上完整或接近完整的文章標題">
+    </label>
+    <p class="hint">若找不到完全相符的文章，可以試著只留關鍵幾個字，或改用下方的 PICO / 自訂查詢式。</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>或直接輸入完整 PubMed 查詢式（填了會優先於 PICO 欄位使用）</legend>
     <label>自訂查詢式<input type="text" name="raw_query" value="{{ raw_query }}" placeholder='例如：COPD[Title] AND 2023[PDAT]'></label>
   </fieldset>
 
@@ -133,6 +141,23 @@ RESULTS_TEMPLATE = """
 """
 
 
+def _form_state(form, error=""):
+    return dict(
+        population=form.get("population", ""),
+        intervention=form.get("intervention", ""),
+        comparison=form.get("comparison", ""),
+        outcome=form.get("outcome", ""),
+        title=form.get("title", ""),
+        raw_query=form.get("raw_query", ""),
+        email=form.get("email", ""),
+        max_results=form.get("max_results", 20),
+        api_key=form.get("api_key", ""),
+        free_full_text_only=bool(form.get("free_full_text_only")),
+        use_unpaywall=bool(form.get("use_unpaywall")),
+        error=error,
+    )
+
+
 @app.get("/")
 def index():
     return render_template_string(
@@ -141,21 +166,26 @@ def index():
         intervention="",
         comparison="",
         outcome="",
+        title="",
         raw_query="",
         email="",
         max_results=20,
         api_key="",
         free_full_text_only=False,
         use_unpaywall=True,
+        error="",
     )
 
 
 @app.post("/search")
 def search():
     form = request.form
+    title = form.get("title", "").strip()
     raw_query = form.get("raw_query", "").strip()
 
-    if raw_query:
+    if title:
+        query = build_title_query(title)
+    elif raw_query:
         query = raw_query
     else:
         query = build_pico_query(
@@ -166,19 +196,7 @@ def search():
         )
 
     if not query:
-        return render_template_string(
-            FORM_TEMPLATE,
-            population=form.get("population", ""),
-            intervention=form.get("intervention", ""),
-            comparison=form.get("comparison", ""),
-            outcome=form.get("outcome", ""),
-            raw_query=raw_query,
-            email=form.get("email", ""),
-            max_results=form.get("max_results", 20),
-            api_key=form.get("api_key", ""),
-            free_full_text_only=bool(form.get("free_full_text_only")),
-            use_unpaywall=bool(form.get("use_unpaywall")),
-        ), 400
+        return render_template_string(FORM_TEMPLATE, **_form_state(form)), 400
 
     run_id = uuid.uuid4().hex
     outdir = BASE_DOWNLOADS_DIR / run_id
@@ -196,18 +214,7 @@ def search():
         )
     except Exception as exc:
         return render_template_string(
-            FORM_TEMPLATE,
-            population=form.get("population", ""),
-            intervention=form.get("intervention", ""),
-            comparison=form.get("comparison", ""),
-            outcome=form.get("outcome", ""),
-            raw_query=raw_query,
-            email=form.get("email", ""),
-            max_results=form.get("max_results", 20),
-            api_key=form.get("api_key", ""),
-            free_full_text_only=bool(form.get("free_full_text_only")),
-            use_unpaywall=bool(form.get("use_unpaywall")),
-            error=f"搜尋過程發生錯誤：{exc}",
+            FORM_TEMPLATE, **_form_state(form, error=f"搜尋過程發生錯誤：{exc}")
         ), 502
 
     downloaded_count = sum(1 for a in articles if a.status == "downloaded")

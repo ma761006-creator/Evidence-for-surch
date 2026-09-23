@@ -29,6 +29,13 @@ def build_pico_query(
     return " AND ".join(parts)
 
 
+def build_title_query(title: str) -> str:
+    title = title.strip().replace('"', "")
+    if not title:
+        return ""
+    return f'"{title}"[Title]'
+
+
 def run_pipeline(
     query: str,
     email: str,

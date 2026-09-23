@@ -35,7 +35,8 @@ python -m pubmed_fulltext.cli \
 
 | 參數 | 必填 | 說明 |
 |---|---|---|
-| `--query` | 是 | PubMed 搜尋字串，語法與 PubMed 網站相同（可用 `AND`/`OR`、`[Title]`、`[MeSH Terms]` 等） |
+| `--query` | 二擇一 | PubMed 搜尋字串，語法與 PubMed 網站相同（可用 `AND`/`OR`、`[Title]`、`[MeSH Terms]` 等）。與 `--title` 二選一 |
+| `--title` | 二擇一 | 直接用文章標題搜尋，會自動組成 `"標題"[Title]` 精確比對 PubMed 的標題欄位。與 `--query` 二選一 |
 | `--max-results` | 否 | 最多搜尋筆數，預設 20 |
 | `--email` | 是 | 聯絡信箱，NCBI 與 Unpaywall API 皆要求提供以識別呼叫來源 |
 | `--api-key` | 否 | [NCBI API key](https://www.ncbi.nlm.nih.gov/account/settings/)，可將查詢速率上限從每秒 3 次提高到每秒 10 次 |
@@ -51,6 +52,18 @@ python -m pubmed_fulltext.cli \
   --email your_email@example.com
 ```
 
+### 依文章標題搜尋
+
+如果已經知道確切（或接近確切）的文章標題，可以直接用 `--title`，不用自己組查詢語法：
+
+```bash
+python -m pubmed_fulltext.cli \
+  --title "A Novel Coronavirus from Patients with Pneumonia in China, 2019" \
+  --email your_email@example.com
+```
+
+找不到完全相符的標題時，可以只保留關鍵幾個字再試一次，或改用 `--query` 搭配 `[Title]` 做部分比對。
+
 ## 網頁版（適合用 PICO 架構搜尋）
 
 如果不想用指令列，也可以啟動本機網頁介面，用表單填寫 PICO（Population / Intervention / Comparison / Outcome）關鍵字：
@@ -60,11 +73,13 @@ pip install -r requirements.txt
 python -m pubmed_fulltext.webapp
 ```
 
-啟動後，用瀏覽器打開 <http://127.0.0.1:5000>，會看到一個表單：
+啟動後，用瀏覽器打開 <http://127.0.0.1:5000>，會看到一個表單，三種搜尋方式擇一使用（優先順序：**文章標題 > 自訂查詢式 > PICO 欄位**）：
 
-- 分別填 **P / I / C / O** 欄位（同一欄位可用逗號分隔多個同義詞，會自動用 `OR` 組合，各欄位之間用 `AND` 組合），或者直接在「自訂查詢式」欄位貼上完整的 PubMed 查詢語法（填了會優先使用）
-- 填入聯絡信箱、要抓的最多筆數，勾選是否要查 Unpaywall、是否只搜尋 Free full text
-- 送出後會直接在網頁上看到每篇文章的下載狀態，成功下載的可以直接點連結開啟 PDF，也可以下載整份 `index.csv`
+- **依文章標題搜尋**：貼上完整或接近完整的文章標題，直接精確比對
+- **PICO 關鍵字**：分別填 **P / I / C / O** 欄位（同一欄位可用逗號分隔多個同義詞，會自動用 `OR` 組合，各欄位之間用 `AND` 組合）
+- **自訂查詢式**：直接貼完整的 PubMed 查詢語法
+
+填入聯絡信箱、要抓的最多筆數，勾選是否要查 Unpaywall、是否只搜尋 Free full text，送出後會直接在網頁上看到每篇文章的下載狀態，成功下載的可以直接點連結開啟 PDF，也可以下載整份 `index.csv`。
 
 > 這個網頁介面只會在你自己的電腦上執行（`127.0.0.1`，只有你的瀏覽器連得到），不會對外公開，也沒有帳號登入機制，設計上就是給自己本機使用的小工具。
 
