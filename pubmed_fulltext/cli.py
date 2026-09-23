@@ -20,6 +20,11 @@ def parse_args():
         action="store_true",
         help="不使用 Unpaywall 查詢非 PMC 期刊的開放取用連結",
     )
+    parser.add_argument(
+        "--free-full-text-only",
+        action="store_true",
+        help='在搜尋階段就加上 PubMed 的「Free full text」篩選（附加 free full text[sb]），避免搜到大量沒有全文的文章',
+    )
     return parser.parse_args()
 
 
@@ -29,8 +34,12 @@ def run(args):
 
     client = EntrezClient(email=args.email, api_key=args.api_key)
 
-    print(f"搜尋 PubMed: {args.query}")
-    pmids = client.search(args.query, max_results=args.max_results)
+    query = args.query
+    if args.free_full_text_only:
+        query = f"({query}) AND free full text[sb]"
+
+    print(f"搜尋 PubMed: {query}")
+    pmids = client.search(query, max_results=args.max_results)
     print(f"找到 {len(pmids)} 篇文獻，開始擷取詳細資料...")
 
     articles = client.fetch_articles(pmids)

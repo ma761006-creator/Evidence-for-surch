@@ -39,6 +39,7 @@ python -m pubmed_fulltext.cli \
 | `--api-key` | 否 | [NCBI API key](https://www.ncbi.nlm.nih.gov/account/settings/)，可將查詢速率上限從每秒 3 次提高到每秒 10 次 |
 | `--outdir` | 否 | 全文與索引檔輸出資料夾，預設 `downloads` |
 | `--no-unpaywall` | 否 | 加上此參數則不查詢 Unpaywall，只下載 PMC 開放取用全文 |
+| `--free-full-text-only` | 否 | 在搜尋時就加上 PubMed 的「Free full text」篩選（附加 `free full text[sb]`），避免搜到大量沒有全文的文章，適合想先驗證下載流程或只想要免費全文結果的情境 |
 
 ### 範例查詢語法
 
