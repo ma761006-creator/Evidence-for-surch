@@ -51,6 +51,25 @@ python -m pubmed_fulltext.cli \
   --email your_email@example.com
 ```
 
+## 網頁版（適合用 PICO 架構搜尋）
+
+如果不想用指令列，也可以啟動本機網頁介面，用表單填寫 PICO（Population / Intervention / Comparison / Outcome）關鍵字：
+
+```bash
+pip install -r requirements.txt
+python -m pubmed_fulltext.webapp
+```
+
+啟動後，用瀏覽器打開 <http://127.0.0.1:5000>，會看到一個表單：
+
+- 分別填 **P / I / C / O** 欄位（同一欄位可用逗號分隔多個同義詞，會自動用 `OR` 組合，各欄位之間用 `AND` 組合），或者直接在「自訂查詢式」欄位貼上完整的 PubMed 查詢語法（填了會優先使用）
+- 填入聯絡信箱、要抓的最多筆數，勾選是否要查 Unpaywall、是否只搜尋 Free full text
+- 送出後會直接在網頁上看到每篇文章的下載狀態，成功下載的可以直接點連結開啟 PDF，也可以下載整份 `index.csv`
+
+> 這個網頁介面只會在你自己的電腦上執行（`127.0.0.1`，只有你的瀏覽器連得到），不會對外公開，也沒有帳號登入機制，設計上就是給自己本機使用的小工具。
+
+網頁版每次搜尋會建立一個獨立的子資料夾（`downloads/<隨機代碼>/`），避免不同次搜尋的結果互相覆蓋。
+
 ## 輸出結果
 
 ```
