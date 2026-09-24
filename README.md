@@ -81,9 +81,36 @@ python -m pubmed_fulltext.webapp
 
 填入聯絡信箱、要抓的最多筆數，勾選是否要查 Unpaywall、是否只搜尋 Free full text，送出後會直接在網頁上看到每篇文章的下載狀態，成功下載的可以直接點連結開啟 PDF，也可以下載整份 `index.csv`。
 
-> 這個網頁介面只會在你自己的電腦上執行（`127.0.0.1`，只有你的瀏覽器連得到），不會對外公開，也沒有帳號登入機制，設計上就是給自己本機使用的小工具。
+> 直接用 `python -m pubmed_fulltext.webapp` 啟動時，預設只綁定 `127.0.0.1`（只有你自己電腦上的瀏覽器連得到），也沒有帳號登入機制，適合純本機使用。如果要讓其他裝置或雲端主機連進來，請看下面「部署到雲端（24 小時可用）」，並務必設定帳號密碼。
 
 網頁版每次搜尋會建立一個獨立的子資料夾（`downloads/<隨機代碼>/`），避免不同次搜尋的結果互相覆蓋。
+
+## 部署到雲端（24 小時可用，不需要自己的電腦開著）
+
+如果想從任何裝置、任何時間都能使用，且不需要 Mac 保持開機，可以把這個網頁部署到雲端主機上（例如 [Render](https://render.com)、[Railway](https://railway.app)、[Fly.io](https://fly.io) 等提供免費或低成本方案的平台，實際免費額度請以各平台當下公告為準）。
+
+### 1. 設定登入帳密（部署到公開網路前一定要做）
+
+程式已經內建簡單的登入保護：只要設定環境變數 `WEBAPP_USERNAME` 和 `WEBAPP_PASSWORD`，網頁就會要求輸入帳號密碼才能使用；沒有設定這兩個變數時（例如在自己電腦本機執行）則完全不會擋，維持原本方便測試的行為。
+
+**部署到任何公開網路可存取的主機時，請務必設定這兩個環境變數**，否則任何人拿到網址都能使用你的工具（並且會消耗你的 NCBI / Unpaywall 查詢額度）。
+
+### 2. 部署設定
+
+本專案已經包含部署所需的檔案：
+
+- `Procfile`：內容為 `web: gunicorn "pubmed_fulltext.webapp:app"`，多數平台（Render、Railway 等）會自動偵測並用它啟動服務
+- `requirements.txt`：已包含 `gunicorn`（正式環境用的 WSGI 伺服器，取代開發用的 Flask 內建伺服器）
+
+以 Render 為例的大致步驟：
+
+1. 把這個 GitHub repo 連接到 Render，建立一個新的 **Web Service**
+2. Build command：`pip install -r requirements.txt`
+3. Start command：留空讓它使用 `Procfile`，或手動填 `gunicorn "pubmed_fulltext.webapp:app"`
+4. 在該服務的環境變數（Environment Variables）設定 `WEBAPP_USERNAME`、`WEBAPP_PASSWORD`（自己取一組帳密）
+5. 部署完成後會拿到一個 `https://xxxx.onrender.com` 的網址，之後從任何裝置打開這個網址、輸入帳密即可使用
+
+> **注意**：多數免費方案的主機重開機或重新部署時，磁碟內容可能不會保留，代表 `downloads/` 裡已下載的 PDF 有可能在重啟後消失（但 `index.csv` 裡的紀錄與外部連結還是找得到來源）。如果需要長期保存下載的全文，建議每次下載後自行把檔案存到自己的電腦或雲端硬碟。
 
 ## 輸出結果
 

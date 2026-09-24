@@ -1,15 +1,40 @@
 from __future__ import annotations
 
+import hmac
+import os
 import re
 import uuid
 from pathlib import Path
 
-from flask import Flask, abort, render_template_string, request, send_from_directory
+from flask import Flask, Response, abort, render_template_string, request, send_from_directory
 
 from .pipeline import build_pico_query, build_title_query, run_pipeline
 
 app = Flask(__name__)
 BASE_DOWNLOADS_DIR = Path("downloads")
+
+AUTH_USERNAME = os.environ.get("WEBAPP_USERNAME", "")
+AUTH_PASSWORD = os.environ.get("WEBAPP_PASSWORD", "")
+
+
+@app.before_request
+def require_login():
+    if not AUTH_USERNAME or not AUTH_PASSWORD:
+        return None  # 沒設定帳密（本機使用）就不擋
+
+    auth = request.authorization
+    valid = (
+        auth
+        and hmac.compare_digest(auth.username, AUTH_USERNAME)
+        and hmac.compare_digest(auth.password, AUTH_PASSWORD)
+    )
+    if not valid:
+        return Response(
+            "需要登入才能使用這個工具。",
+            401,
+            {"WWW-Authenticate": 'Basic realm="PubMed 全文搜尋"'},
+        )
+    return None
 
 FORM_TEMPLATE = """
 <!doctype html>
@@ -239,7 +264,9 @@ def serve_file(run_id, filename):
 
 
 def main():
-    app.run(host="127.0.0.1", port=5000, debug=False, threaded=True)
+    port = int(os.environ.get("PORT", 5000))
+    host = "0.0.0.0" if "PORT" in os.environ else "127.0.0.1"
+    app.run(host=host, port=port, debug=False, threaded=True)
 
 
 if __name__ == "__main__":
